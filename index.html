@@ -229,7 +229,42 @@
         }, { threshold: 0.6 });
 
         document.querySelectorAll('.reel').forEach(reel => { observer.observe(reel); });
-    </script>
+    </script><script>
+function uploadVideo() {
+    const fileInput = document.getElementById('videoFile');
+    const captionInput = document.getElementById('videoCaption');
+    
+    // Check karein ki video select hua hai ya nahi
+    if (fileInput.files.length === 0) {
+        alert("Pehle koi video select karein!");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const videoUrl = URL.createObjectURL(file); // Temporary URL banana
+    
+    const newReel = {
+        url: videoUrl,
+        caption: captionInput.value || "My Reel"
+    };
+
+    // Agar aapke app me 'videos' array aur 'renderFeed' function hai
+    if (typeof videos !== 'undefined') {
+        videos.unshift(newReel);
+    }
+    
+    if (typeof renderFeed === 'function') {
+        renderFeed(); 
+    }
+    
+    // Form band karein aur fields khali karein
+    fileInput.value = "";
+    captionInput.value = "";
+    document.getElementById('uploadModal').style.display = 'none';
+    alert("Reel successfully posted!");
+}
+</script>
+
 </body><!-- Upload Open Button (+) -->
 <button onclick="document.getElementById('uploadModal').style.display='block'" style="position: fixed; bottom: 20px; right: 20px; background: #ff2442; color: white; border-radius: 50%; width: 55px; height: 55px; font-size: 28px; border: none; z-index: 999; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;">+</button>
 
