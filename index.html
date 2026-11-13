@@ -230,7 +230,43 @@
 
         document.querySelectorAll('.reel').forEach(reel => { observer.observe(reel); });
     </script>
-</body><!-- Upload Modal / Form -->
+</body><!-- Upload Open Button (+) -->
+<button onclick="document.getElementById('uploadModal').style.display='block'" style="position: fixed; bottom: 20px; right: 20px; background: #ff2442; color: white; border-radius: 50%; width: 55px; height: 55px; font-size: 28px; border: none; z-index: 999; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;">+</button>
+
+<!-- JavaScript Code for Upload -->
+<script>
+function uploadVideo() {
+    const fileInput = document.getElementById('videoFile');
+    const captionInput = document.getElementById('videoCaption');
+    
+    if (fileInput.files.length === 0) {
+        alert("Pehle koi video select karein!");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const videoUrl = URL.createObjectURL(file);
+    
+    const newReel = {
+        url: videoUrl,
+        caption: captionInput.value || "My Reel"
+    };
+
+    if (typeof videos !== 'undefined') {
+        videos.unshift(newReel);
+    }
+    
+    if (typeof renderFeed === 'function') {
+        renderFeed(); 
+    }
+    
+    fileInput.value = "";
+    captionInput.value = "";
+    document.getElementById('uploadModal').style.display = 'none';
+    alert("Reel successfully posted!");
+}
+</script>
+    <!-- Upload Modal / Form -->
 <div id="uploadModal" style="display:none; background: #ffffff; padding: 20px; border-radius: 12px; position: fixed; top: 25%; left: 10%; right: 10%; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
     <h3 style="margin-top: 0; color: #333;">Upload New Reel</h3>
     
