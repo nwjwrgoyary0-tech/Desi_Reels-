@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desi Reels - Login</title>
+    <title>Desi Reels</title>
+    
+    <!-- Firebase SDKs (CDN) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <style>
         * {
             margin: 0;
@@ -41,7 +47,7 @@
             }
         }
 
-        /* ऑथेंटिकेशन / लॉगिन स्क्रीन */
+        /* लॉगिन स्क्रीन */
         .auth-screen {
             position: absolute;
             top: 0;
@@ -83,7 +89,6 @@
             margin-bottom: 20px;
         }
 
-        /* सोशल और मोबाइल लॉगिन बटन */
         .social-btn {
             width: 100%;
             padding: 12px;
@@ -97,27 +102,11 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-            transition: opacity 0.2s;
         }
 
-        .social-btn:active {
-            opacity: 0.8;
-        }
-
-        .google-btn {
-            background: #fff;
-            color: #333;
-        }
-
-        .facebook-btn {
-            background: #1877f2;
-            color: #fff;
-        }
-
-        .phone-btn {
-            background: #25d366;
-            color: #fff;
-        }
+        .google-btn { background: #fff; color: #333; }
+        .facebook-btn { background: #1877f2; color: #fff; }
+        .phone-btn { background: #25d366; color: #fff; }
 
         .divider {
             margin: 15px 0;
@@ -134,19 +123,17 @@
             height: 1px;
             background: #444;
         }
-
         .divider::before { left: 0; }
         .divider::after { right: 0; }
 
-        /* मोबाइल इनपुट फॉर्म */
-        .phone-input-group {
+        .input-group {
             display: none;
             flex-direction: column;
             gap: 10px;
             margin-top: 10px;
         }
 
-        .phone-input-group.active {
+        .input-group.active {
             display: flex;
         }
 
@@ -160,7 +147,7 @@
             font-size: 15px;
         }
 
-        .auth-box button.submit-phone {
+        .auth-box button.submit-input {
             width: 100%;
             padding: 12px;
             border: none;
@@ -181,7 +168,7 @@
             border: none;
         }
 
-        /* टॉप हेडर */
+        /* हेडर */
         .header {
             position: absolute;
             top: 0;
@@ -198,7 +185,6 @@
         .header h1 {
             font-size: 20px;
             font-weight: bold;
-            letter-spacing: 1px;
             color: #ff3b5c;
         }
 
@@ -213,15 +199,16 @@
 
         /* रील्स फीड */
         .reels-container {
-            flex: 1;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: calc(100vh - 65px);
             overflow-y: scroll;
             scroll-snap-type: y mandatory;
             scrollbar-width: none;
         }
-
-        .reels-container::-webkit-scrollbar {
-            display: none;
-        }
+        .reels-container::-webkit-scrollbar { display: none; }
 
         .reel-card {
             width: 100%;
@@ -240,11 +227,10 @@
             object-fit: cover;
         }
 
-        /* रील्स एक्शन बटन */
         .reel-actions {
             position: absolute;
             right: 15px;
-            bottom: 80px;
+            bottom: 90px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -275,7 +261,7 @@
         .reel-details {
             position: absolute;
             left: 15px;
-            bottom: 20px;
+            bottom: 30px;
             right: 80px;
             z-index: 5;
             text-shadow: 0 1px 3px rgba(0,0,0,0.8);
@@ -292,19 +278,19 @@
             color: #eee;
         }
 
-        /* बॉटम नेविगेशन */
+        /* नेविगेशन बार */
         .navbar {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 60px;
+            height: 65px;
             background: #121212;
             border-top: 1px solid #222;
             display: flex;
             justify-content: space-around;
             align-items: center;
-            z-index: 10;
+            z-index: 50;
         }
 
         .nav-item {
@@ -318,15 +304,16 @@
         .upload-tab-btn {
             background: #ff3b5c;
             color: white;
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             border: none;
-            font-size: 24px;
+            font-size: 26px;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 59, 92, 0.4);
         }
 
         /* अपलोड मॉडल */
@@ -339,7 +326,7 @@
             background: #1e1e1e;
             border-top-left-radius: 20px;
             border-top-right-radius: 20px;
-            z-index: 20;
+            z-index: 200;
             padding: 20px;
             display: flex;
             flex-direction: column;
@@ -400,52 +387,50 @@
 
     <div id="app-container">
         
-        <!-- लॉगिन स्क्रीन (Google, Facebook, Mobile) -->
+        <!-- लॉगिन स्क्रीन -->
         <div id="authScreen" class="auth-screen">
             <div class="auth-box">
-                <h2>Desi Reels</h2>
-                <p>लॉगिन करके अपनी रील्स शेयर करें</p>
+                <h2 id="authHeading">Desi Reels</h2>
+                <p id="authSub">अपने असली अकाउंट से लॉगिन करें</p>
 
-                <!-- सोशल लॉगिन बटन्स -->
                 <div id="socialButtonsContainer">
-                    <button class="social-btn google-btn" onclick="loginWithSocial('Google User')">
+                    <button class="social-btn google-btn" onclick="promptLogin('Google')">
                         🌐 Google से लॉगिन करें
                     </button>
-                    <button class="social-btn facebook-btn" onclick="loginWithSocial('Facebook User')">
+                    <button class="social-btn facebook-btn" onclick="promptLogin('Facebook')">
                         📘 Facebook से लॉगिन करें
                     </button>
                     <div class="divider">या</div>
-                    <button class="social-btn phone-btn" onclick="showPhoneInput()">
+                    <button class="social-btn phone-btn" onclick="promptLogin('Phone')">
                         📱 मोबाइल नंबर से लॉगिन करें
                     </button>
                 </div>
 
-                <!-- मोबाइल नंबर इनपुट सेक्शन -->
-                <div id="phoneInputGroup" class="phone-input-group">
-                    <input type="tel" id="mobileInput" placeholder="अपना मोबाइल नंबर दर्ज करें" maxlength="10">
-                    <button class="submit-phone" onclick="loginWithPhone()">जारी रखें</button>
-                    <button class="back-to-social" onclick="hidePhoneInput()">← वापस जाएं</button>
+                <div id="inputGroup" class="input-group">
+                    <input type="text" id="userInputField" placeholder="जानकारी दर्ज करें">
+                    <button class="submit-input" onclick="completeLogin()">आगे बढ़ें</button>
+                    <button class="back-to-social" onclick="resetAuthView()">← पीछे जाएं</button>
                 </div>
             </div>
         </div>
 
-        <!-- टॉप हेडर -->
+        <!-- हेडर -->
         <div class="header">
             <h1>Desi Reels</h1>
             <div id="userProfileDisplay" class="user-info" onclick="logoutUser()" title="लॉग आउट">प्रोफाइल</div>
         </div>
 
-        <!-- रील्स फीड एरिया -->
+        <!-- रील्स फीड -->
         <div class="reels-container" id="reelsContainer"></div>
 
         <!-- बॉटम नेविगेशन -->
         <div class="navbar">
             <button class="nav-item">🏠 होम</button>
-            <button class="upload-tab-btn" onclick="openUploadModal()">+</button>
+            <button class="upload-tab-btn" onclick="openUploadModal()">＋</button>
             <button class="nav-item" onclick="logoutUser()">🚪 लॉग आउट</button>
         </div>
 
-        <!-- वीडियो अपलोड मॉडल -->
+        <!-- अपलोड मॉडल -->
         <div class="upload-modal" id="uploadModal">
             <div class="upload-header">
                 <h3>नया रील अपलोड करें</h3>
@@ -461,9 +446,25 @@
     </div>
 
     <script>
-        let currentUser = localStorage.getItem('desiReels_currentUser');
+        // आपके असली Firebase की कॉन्फिगरेशन
+        const firebaseConfig = {
+            apiKey: "AIzaSyAb7NVBfgm-E9CK6vnX2du0p2JyIzpAYmE",
+            authDomain: "desi-reels-be2fc.firebaseapp.com",
+            projectId: "desi-reels-be2fc",
+            storageBucket: "desi-reels-be2fc.firebasestorage.app",
+            messagingSenderId: "286897054744",
+            appId: "1:286897054744:web:7de881bc6a6155eb074f6d",
+            measurementId: "G-KCYW6JTXPG"
+        };
 
-        let reelsData = JSON.parse(localStorage.getItem('desiReels_videos')) || [
+        // Firebase इनिशियलाइज करना
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let currentUser = localStorage.getItem('desiReels_currentUser');
+        let selectedMethod = '';
+
+        let defaultReels = [
             {
                 username: "Desi Creator",
                 caption: "इश्क़ की वादी - खूबसूरत मौसम और संगीत! 🎶",
@@ -472,58 +473,93 @@
             }
         ];
 
-        window.onload = function() {
+        let reelsData = [];
+
+        window.onload = async function() {
             if (currentUser) {
                 document.getElementById('authScreen').classList.add('hidden');
                 document.getElementById('userProfileDisplay').innerText = currentUser;
-                renderReels();
             } else {
                 document.getElementById('authScreen').classList.remove('hidden');
             }
+            await loadReelsFromCloud();
         };
 
-        // Google या Facebook से डायरेक्ट लॉगिन
-        function loginWithSocial(providerName) {
-            currentUser = providerName;
-            localStorage.setItem('desiReels_currentUser', currentUser);
-            document.getElementById('authScreen').classList.add('hidden');
-            document.getElementById('userProfileDisplay').innerText = currentUser;
-            renderReels();
+        // क्लाउड (Firebase Firestore) से रील्स लोड करना
+        async function loadReelsFromCloud() {
+            try {
+                const snapshot = await db.collection('reels').orderBy('timestamp', 'desc').get();
+                if (!snapshot.empty) {
+                    reelsData = [];
+                    snapshot.forEach(doc => {
+                        reelsData.push(doc.data());
+                    });
+                } else {
+                    reelsData = defaultReels;
+                }
+                renderReels();
+            } catch (error) {
+                console.error("Error loading reels: ", error);
+                reelsData = defaultReels;
+                renderReels();
+            }
         }
 
-        // मोबाइल नंबर इनपुट दिखाना
-        function showPhoneInput() {
+        function promptLogin(method) {
+            selectedMethod = method;
             document.getElementById('socialButtonsContainer').style.display = 'none';
-            document.getElementById('phoneInputGroup').classList.add('active');
+            document.getElementById('inputGroup').classList.add('active');
+
+            const inputField = document.getElementById('userInputField');
+            const heading = document.getElementById('authHeading');
+
+            if (method === 'Google') {
+                heading.innerText = "Google लॉगिन";
+                inputField.placeholder = "अपनी Gmail आईडी दर्ज करें";
+                inputField.type = "email";
+            } else if (method === 'Facebook') {
+                heading.innerText = "Facebook लॉगिन";
+                inputField.placeholder = "अपना Facebook नाम दर्ज करें";
+                inputField.type = "text";
+            } else if (method === 'Phone') {
+                heading.innerText = "मोबाइल लॉगिन";
+                inputField.placeholder = "10 अंकों का मोबाइल नंबर दर्ज करें";
+                inputField.type = "tel";
+                inputField.maxLength = 10;
+            }
         }
 
-        // वापस सोशल बटन पर जाना
-        function hidePhoneInput() {
+        function resetAuthView() {
             document.getElementById('socialButtonsContainer').style.display = 'block';
-            document.getElementById('phoneInputGroup').classList.remove('active');
+            document.getElementById('inputGroup').classList.remove('active');
+            document.getElementById('authHeading').innerText = "Desi Reels";
+            document.getElementById('userInputField').value = '';
         }
 
-        // मोबाइल नंबर से लॉगिन
-        function loginWithPhone() {
-            const phone = document.getElementById('mobileInput').value.trim();
-            if (phone.length < 10) {
+        function completeLogin() {
+            const val = document.getElementById('userInputField').value.trim();
+            if (!val) {
+                alert("कृपया जानकारी दर्ज करें!");
+                return;
+            }
+
+            if (selectedMethod === 'Phone' && val.length < 10) {
                 alert("कृपया सही 10 अंकों का मोबाइल नंबर दर्ज करें!");
                 return;
             }
-            currentUser = "User_" + phone.slice(-4); // मोबाइल के आखिरी 4 अंक यूजरनेम के रूप में
+
+            currentUser = val;
             localStorage.setItem('desiReels_currentUser', currentUser);
             document.getElementById('authScreen').classList.add('hidden');
             document.getElementById('userProfileDisplay').innerText = currentUser;
-            renderReels();
+            loadReelsFromCloud();
         }
 
-        // लॉग आउट
         function logoutUser() {
             localStorage.removeItem('desiReels_currentUser');
             location.reload();
         }
 
-        // रील्स रेंडर करना
         function renderReels() {
             const container = document.getElementById('reelsContainer');
             container.innerHTML = "";
@@ -535,7 +571,7 @@
                     <video src="${reel.videoUrl}" loop autoplay muted playsinline></video>
                     <div class="reel-actions">
                         <button class="action-btn" onclick="likeReel(${index})">❤️</button>
-                        <span class="action-text">${reel.likes}</span>
+                        <span class="action-text">${reel.likes || 0}</span>
                     </div>
                     <div class="reel-details">
                         <div class="reel-username">@${reel.username}</div>
@@ -546,8 +582,8 @@
             });
         }
 
-        function likeReel(index) {
-            reelsData[index].likes += 1;
+        async function likeReel(index) {
+            reelsData[index].likes = (reelsData[index].likes || 0) + 1;
             renderReels();
         }
 
@@ -559,7 +595,8 @@
             document.getElementById('uploadModal').classList.remove('active');
         }
 
-        function uploadReel() {
+        // क्लाउड डेटाबेस पर नई रील सेव करना
+        async function uploadReel() {
             const fileInput = document.getElementById('videoFile');
             const captionInput = document.getElementById('videoCaption');
 
@@ -569,24 +606,29 @@
             }
 
             const file = fileInput.files[0];
-            const videoUrl = URL.createObjectURL(file);
+            const videoUrl = URL.createObjectURL(file); // लोकल फाइल प्रिव्यू URL
             const caption = captionInput.value || "मेरी नई रील";
 
             const newReel = {
                 username: currentUser,
                 caption: caption,
                 videoUrl: videoUrl,
-                likes: 0
+                likes: 0,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            reelsData.unshift(newReel);
-            localStorage.setItem('desiReels_videos', JSON.stringify(reelsData));
-            
-            renderReels();
-            closeUploadModal();
-            fileInput.value = "";
-            captionInput.value = "";
-            alert("रील सफलतापूर्वक अपलोड हो गई!");
+            try {
+                // Firestore डेटाबेस में सेव करें
+                await db.collection('reels').add(newReel);
+                alert("रील सफलतापूर्वक क्लाउड पर अपलोड हो गई!");
+                await loadReelsFromCloud();
+                closeUploadModal();
+                fileInput.value = "";
+                captionInput.value = "";
+            } catch (error) {
+                console.error("Error uploading: ", error);
+                alert("अपलोड करने में कुछ त्रुटि हुई!");
+            }
         }
     </script>
 </body>
