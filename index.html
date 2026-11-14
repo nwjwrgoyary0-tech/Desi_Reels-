@@ -1,25 +1,231 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Desi Reels App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desi Reels - Login</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body, html { width: 100%; height: 100%; background: #000; font-family: sans-serif; overflow: hidden; }
-        
-        .reels-container {
-            width: 100%;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            overflow: hidden;
             height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #app-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            background-color: #121212;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        @media(min-width: 481px) {
+            #app-container {
+                height: 90vh;
+                border-radius: 20px;
+                box-shadow: 0 10px 30px rgba(255,255,255,0.1);
+            }
+        }
+
+        /* ऑथेंटिकेशन / लॉगिन स्क्रीन */
+        .auth-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1f1c2c, #928dab);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .auth-screen.hidden {
+            display: none;
+        }
+
+        .auth-box {
+            background: rgba(0, 0, 0, 0.85);
+            padding: 25px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+        }
+
+        .auth-box h2 {
+            margin-bottom: 8px;
+            color: #ff3b5c;
+            font-size: 24px;
+        }
+
+        .auth-box p {
+            font-size: 13px;
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+
+        /* सोशल और मोबाइल लॉगिन बटन */
+        .social-btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: opacity 0.2s;
+        }
+
+        .social-btn:active {
+            opacity: 0.8;
+        }
+
+        .google-btn {
+            background: #fff;
+            color: #333;
+        }
+
+        .facebook-btn {
+            background: #1877f2;
+            color: #fff;
+        }
+
+        .phone-btn {
+            background: #25d366;
+            color: #fff;
+        }
+
+        .divider {
+            margin: 15px 0;
+            font-size: 13px;
+            color: #666;
+            position: relative;
+        }
+
+        .divider::before, .divider::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            width: 40%;
+            height: 1px;
+            background: #444;
+        }
+
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+
+        /* मोबाइल इनपुट फॉर्म */
+        .phone-input-group {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .phone-input-group.active {
+            display: flex;
+        }
+
+        .auth-box input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #444;
+            border-radius: 8px;
+            background: #222;
+            color: #fff;
+            font-size: 15px;
+        }
+
+        .auth-box button.submit-phone {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #ff3b5c;
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .back-to-social {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #ff3b5c;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        /* टॉप हेडर */
+        .header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            color: #ff3b5c;
+        }
+
+        .user-info {
+            font-size: 13px;
+            color: #ddd;
+            background: rgba(255,255,255,0.15);
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        /* रील्स फीड */
+        .reels-container {
+            flex: 1;
             overflow-y: scroll;
             scroll-snap-type: y mandatory;
             scrollbar-width: none;
         }
-        .reels-container::-webkit-scrollbar { display: none; }
 
-        .reel {
+        .reels-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .reel-card {
             width: 100%;
-            height: 100vh;
+            height: 100%;
             scroll-snap-align: start;
             position: relative;
             background: #000;
@@ -28,292 +234,360 @@
             align-items: center;
         }
 
-        .reel video {
+        .reel-card video {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
 
-        .reel-info {
-            position: absolute;
-            bottom: 35px;
-            left: 15px;
-            right: 75px;
-            color: #fff;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.9);
-        }
-        .username { font-weight: bold; font-size: 16px; margin-bottom: 6px; color: #f1f1f1; }
-        .caption { font-size: 14px; opacity: 0.95; line-height: 1.4; }
-
+        /* रील्स एक्शन बटन */
         .reel-actions {
             position: absolute;
             right: 15px;
-            bottom: 45px;
+            bottom: 80px;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 20px;
+            z-index: 5;
         }
+
         .action-btn {
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0,0,0,0.5);
             border: none;
-            color: white;
-            width: 48px;
-            height: 48px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
-            font-size: 22px;
-            cursor: pointer;
+            color: white;
+            font-size: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
-            backdrop-filter: blur(5px);
+            cursor: pointer;
         }
-        .action-btn:active { transform: scale(0.85); }
 
-        .upload-top-btn {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            z-index: 1000;
-            background: #ff2d55;
-            color: white;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 25px;
+        .action-text {
+            font-size: 12px;
+            margin-top: 2px;
+            text-align: center;
+        }
+
+        .reel-details {
+            position: absolute;
+            left: 15px;
+            bottom: 20px;
+            right: 80px;
+            z-index: 5;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+
+        .reel-username {
             font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .reel-caption {
+            font-size: 14px;
+            color: #eee;
+        }
+
+        /* बॉटम नेविगेशन */
+        .navbar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: #121212;
+            border-top: 1px solid #222;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .nav-item {
+            background: none;
+            border: none;
+            color: #aaa;
             font-size: 14px;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(255,45,85,0.4);
         }
 
-        #uploadModal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.88);
-            z-index: 2000;
+        .upload-tab-btn {
+            background: #ff3b5c;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            font-size: 24px;
+            display: flex;
             justify-content: center;
             align-items: center;
+            cursor: pointer;
         }
-        .modal-box {
-            background: #1c1c1e;
-            padding: 24px;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 360px;
+
+        /* अपलोड मॉडल */
+        .upload-modal {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 80%;
+            background: #1e1e1e;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            z-index: 20;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease-in-out;
+            transform: translateY(100%);
+        }
+
+        .upload-modal.active {
+            transform: translateY(0);
+        }
+
+        .upload-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        .upload-form input[type="file"],
+        .upload-form textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
             color: white;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            font-size: 14px;
         }
-        .modal-box h3 { margin-bottom: 15px; font-size: 18px; }
-        .modal-box input[type="file"] { margin: 15px 0; color: #ccc; width: 100%; font-size: 14px; }
-        .modal-box input[type="text"] { width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #3a3a3c; background: #2c2c2e; color: white; font-size: 14px; outline: none; }
-        .btn-group { display: flex; gap: 12px; justify-content: center; }
-        .modal-btn { padding: 10px 20px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 14px; flex: 1; }
+
+        .upload-form textarea {
+            resize: none;
+            height: 100px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: #ff3b5c;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
-    <button class="upload-top-btn" onclick="openModal()">+ Upload</button>
+    <div id="app-container">
+        
+        <!-- लॉगिन स्क्रीन (Google, Facebook, Mobile) -->
+        <div id="authScreen" class="auth-screen">
+            <div class="auth-box">
+                <h2>Desi Reels</h2>
+                <p>लॉगिन करके अपनी रील्स शेयर करें</p>
 
-    <div id="uploadModal">
-        <div class="modal-box">
-            <h3>Upload New Reel</h3>
-            <input type="file" id="videoFile" accept="video/*"><br>
-            <input type="text" id="captionText" placeholder="Write a caption..."><br>
-            <div class="btn-group">
-                <button class="modal-btn" style="background: #34c759;" onclick="uploadVideo()">Post</button>
-                <button class="modal-btn" style="background: #ff3b30;" onclick="closeModal()">Cancel</button>
+                <!-- सोशल लॉगिन बटन्स -->
+                <div id="socialButtonsContainer">
+                    <button class="social-btn google-btn" onclick="loginWithSocial('Google User')">
+                        🌐 Google से लॉगिन करें
+                    </button>
+                    <button class="social-btn facebook-btn" onclick="loginWithSocial('Facebook User')">
+                        📘 Facebook से लॉगिन करें
+                    </button>
+                    <div class="divider">या</div>
+                    <button class="social-btn phone-btn" onclick="showPhoneInput()">
+                        📱 मोबाइल नंबर से लॉगिन करें
+                    </button>
+                </div>
+
+                <!-- मोबाइल नंबर इनपुट सेक्शन -->
+                <div id="phoneInputGroup" class="phone-input-group">
+                    <input type="tel" id="mobileInput" placeholder="अपना मोबाइल नंबर दर्ज करें" maxlength="10">
+                    <button class="submit-phone" onclick="loginWithPhone()">जारी रखें</button>
+                    <button class="back-to-social" onclick="hidePhoneInput()">← वापस जाएं</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="reels-container" id="reelsContainer">
-        <div class="reel">
-            <video src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" loop playsinline autoplay muted onclick="togglePlay(this)"></video>
-            <div class="reel-info">
-                <div class="username">@creator_hd</div>
-                <div class="caption">Enjoying high quality crystal clear video! 🎬🔥</div>
+        <!-- टॉप हेडर -->
+        <div class="header">
+            <h1>Desi Reels</h1>
+            <div id="userProfileDisplay" class="user-info" onclick="logoutUser()" title="लॉग आउट">प्रोफाइल</div>
+        </div>
+
+        <!-- रील्स फीड एरिया -->
+        <div class="reels-container" id="reelsContainer"></div>
+
+        <!-- बॉटम नेविगेशन -->
+        <div class="navbar">
+            <button class="nav-item">🏠 होम</button>
+            <button class="upload-tab-btn" onclick="openUploadModal()">+</button>
+            <button class="nav-item" onclick="logoutUser()">🚪 लॉग आउट</button>
+        </div>
+
+        <!-- वीडियो अपलोड मॉडल -->
+        <div class="upload-modal" id="uploadModal">
+            <div class="upload-header">
+                <h3>नया रील अपलोड करें</h3>
+                <button class="close-modal" onclick="closeUploadModal()">&times;</button>
             </div>
-            <div class="reel-actions">
-                <button class="action-btn" onclick="likeVideo(this)">❤️</button>
-                <button class="action-btn" onclick="shareVideo()">↗️</button>
+            <div class="upload-form">
+                <input type="file" id="videoFile" accept="video/*">
+                <textarea id="videoCaption" placeholder="इस रील के बारे में कुछ लिखें..."></textarea>
+                <button class="submit-btn" onclick="uploadReel()">अपलोड करें</button>
             </div>
         </div>
 
-        <div class="reel">
-            <video src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4" loop playsinline muted onclick="togglePlay(this)"></video>
-            <div class="reel-info">
-                <div class="username">@trending_shorts</div>
-                <div class="caption">Smooth vertical scrolling experience 🚀</div>
-            </div>
-            <div class="reel-actions">
-                <button class="action-btn" onclick="likeVideo(this)">❤️</button>
-                <button class="action-btn" onclick="shareVideo()">↗️</button>
-            </div>
-        </div>
     </div>
 
     <script>
-        function togglePlay(video) {
-            video.muted = false;
-            if (video.paused) { video.play(); } else { video.pause(); }
-        }
+        let currentUser = localStorage.getItem('desiReels_currentUser');
 
-        function likeVideo(btn) {
-            if (btn.style.color === "red") {
-                btn.style.color = "white";
-                btn.innerHTML = "❤️";
-            } else {
-                btn.style.color = "red";
-                btn.innerHTML = "💖";
+        let reelsData = JSON.parse(localStorage.getItem('desiReels_videos')) || [
+            {
+                username: "Desi Creator",
+                caption: "इश्क़ की वादी - खूबसूरत मौसम और संगीत! 🎶",
+                videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+                likes: 124
             }
-        }
+        ];
 
-        function shareVideo() {
-            if (navigator.share) {
-                navigator.share({ title: 'Desi Reels', text: 'Check out this amazing reel!', url: window.location.href }).catch(console.error);
+        window.onload = function() {
+            if (currentUser) {
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('userProfileDisplay').innerText = currentUser;
+                renderReels();
             } else {
-                alert("Link copied to clipboard!");
+                document.getElementById('authScreen').classList.remove('hidden');
             }
+        };
+
+        // Google या Facebook से डायरेक्ट लॉगिन
+        function loginWithSocial(providerName) {
+            currentUser = providerName;
+            localStorage.setItem('desiReels_currentUser', currentUser);
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('userProfileDisplay').innerText = currentUser;
+            renderReels();
         }
 
-        function openModal() { document.getElementById('uploadModal').style.display = 'flex'; }
-        function closeModal() { document.getElementById('uploadModal').style.display = 'none'; }
+        // मोबाइल नंबर इनपुट दिखाना
+        function showPhoneInput() {
+            document.getElementById('socialButtonsContainer').style.display = 'none';
+            document.getElementById('phoneInputGroup').classList.add('active');
+        }
 
-        function uploadVideo() {
+        // वापस सोशल बटन पर जाना
+        function hidePhoneInput() {
+            document.getElementById('socialButtonsContainer').style.display = 'block';
+            document.getElementById('phoneInputGroup').classList.remove('active');
+        }
+
+        // मोबाइल नंबर से लॉगिन
+        function loginWithPhone() {
+            const phone = document.getElementById('mobileInput').value.trim();
+            if (phone.length < 10) {
+                alert("कृपया सही 10 अंकों का मोबाइल नंबर दर्ज करें!");
+                return;
+            }
+            currentUser = "User_" + phone.slice(-4); // मोबाइल के आखिरी 4 अंक यूजरनेम के रूप में
+            localStorage.setItem('desiReels_currentUser', currentUser);
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('userProfileDisplay').innerText = currentUser;
+            renderReels();
+        }
+
+        // लॉग आउट
+        function logoutUser() {
+            localStorage.removeItem('desiReels_currentUser');
+            location.reload();
+        }
+
+        // रील्स रेंडर करना
+        function renderReels() {
+            const container = document.getElementById('reelsContainer');
+            container.innerHTML = "";
+
+            reelsData.forEach((reel, index) => {
+                const card = document.createElement('div');
+                card.className = 'reel-card';
+                card.innerHTML = `
+                    <video src="${reel.videoUrl}" loop autoplay muted playsinline></video>
+                    <div class="reel-actions">
+                        <button class="action-btn" onclick="likeReel(${index})">❤️</button>
+                        <span class="action-text">${reel.likes}</span>
+                    </div>
+                    <div class="reel-details">
+                        <div class="reel-username">@${reel.username}</div>
+                        <div class="reel-caption">${reel.caption}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function likeReel(index) {
+            reelsData[index].likes += 1;
+            renderReels();
+        }
+
+        function openUploadModal() {
+            document.getElementById('uploadModal').classList.add('active');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.remove('active');
+        }
+
+        function uploadReel() {
             const fileInput = document.getElementById('videoFile');
-            const caption = document.getElementById('captionText').value || "My New Reel 🎥";
+            const captionInput = document.getElementById('videoCaption');
 
             if (fileInput.files.length === 0) {
-                alert("Please select a video file first!");
+                alert("कृपया कोई वीडियो चुनें!");
                 return;
             }
 
-            const videoUrl = URL.createObjectURL(fileInput.files[0]);
-            const container = document.getElementById('reelsContainer');
+            const file = fileInput.files[0];
+            const videoUrl = URL.createObjectURL(file);
+            const caption = captionInput.value || "मेरी नई रील";
 
-            const newReel = document.createElement('div');
-            newReel.className = 'reel';
-            newReel.innerHTML = `
-                <video src="${videoUrl}" loop playsinline autoplay onclick="togglePlay(this)"></video>
-                <div class="reel-info">
-                    <div class="username">@my_profile</div>
-                    <div class="caption">${caption}</div>
-                </div>
-                <div class="reel-actions">
-                    <button class="action-btn" onclick="likeVideo(this)">❤️</button>
-                    <button class="action-btn" onclick="shareVideo()">↗️</button>
-                </div>
-            `;
+            const newReel = {
+                username: currentUser,
+                caption: caption,
+                videoUrl: videoUrl,
+                likes: 0
+            };
 
-            container.prepend(newReel);
-            closeModal();
-            alert("Reel uploaded successfully!");
+            reelsData.unshift(newReel);
+            localStorage.setItem('desiReels_videos', JSON.stringify(reelsData));
             
-            fileInput.value = '';
-            document.getElementById('captionText').value = '';
+            renderReels();
+            closeUploadModal();
+            fileInput.value = "";
+            captionInput.value = "";
+            alert("रील सफलतापूर्वक अपलोड हो गई!");
         }
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                const video = entry.target.querySelector('video');
-                if (entry.isIntersecting) {
-                    video.play().catch(e => console.log("Autoplay blocked"));
-                } else {
-                    video.pause();
-                    video.currentTime = 0;
-                }
-            });
-        }, { threshold: 0.6 });
-
-        document.querySelectorAll('.reel').forEach(reel => { observer.observe(reel); });
-    </script><script>
-function uploadVideo() {
-    const fileInput = document.getElementById('videoFile');
-    const captionInput = document.getElementById('videoCaption');
-    
-    // Check karein ki video select hua hai ya nahi
-    if (fileInput.files.length === 0) {
-        alert("Pehle koi video select karein!");
-        return;
-    }
-
-    const file = fileInput.files[0];
-    const videoUrl = URL.createObjectURL(file); // Temporary URL banana
-    
-    const newReel = {
-        url: videoUrl,
-        caption: captionInput.value || "My Reel"
-    };
-
-    // Agar aapke app me 'videos' array aur 'renderFeed' function hai
-    if (typeof videos !== 'undefined') {
-        videos.unshift(newReel);
-    }
-    
-    if (typeof renderFeed === 'function') {
-        renderFeed(); 
-    }
-    
-    // Form band karein aur fields khali karein
-    fileInput.value = "";
-    captionInput.value = "";
-    document.getElementById('uploadModal').style.display = 'none';
-    alert("Reel successfully posted!");
-}
-</script>
-
-</body><!-- Upload Open Button (+) -->
-<button onclick="document.getElementById('uploadModal').style.display='block'" style="position: fixed; bottom: 20px; right: 20px; background: #ff2442; color: white; border-radius: 50%; width: 55px; height: 55px; font-size: 28px; border: none; z-index: 999; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;">+</button>
-
-<!-- JavaScript Code for Upload -->
-<script>
-function uploadVideo() {
-    const fileInput = document.getElementById('videoFile');
-    const captionInput = document.getElementById('videoCaption');
-    
-    if (fileInput.files.length === 0) {
-        alert("Pehle koi video select karein!");
-        return;
-    }
-
-    const file = fileInput.files[0];
-    const videoUrl = URL.createObjectURL(file);
-    
-    const newReel = {
-        url: videoUrl,
-        caption: captionInput.value || "My Reel"
-    };
-
-    if (typeof videos !== 'undefined') {
-        videos.unshift(newReel);
-    }
-    
-    if (typeof renderFeed === 'function') {
-        renderFeed(); 
-    }
-    
-    fileInput.value = "";
-    captionInput.value = "";
-    document.getElementById('uploadModal').style.display = 'none';
-    alert("Reel successfully posted!");
-}
-</script>
-    <!-- Upload Modal / Form -->
-<div id="uploadModal" style="display:none; background: #ffffff; padding: 20px; border-radius: 12px; position: fixed; top: 25%; left: 10%; right: 10%; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-    <h3 style="margin-top: 0; color: #333;">Upload New Reel</h3>
-    
-    <!-- Video Select Karne Ka Button -->
-    <input type="file" id="videoFile" accept="video/*" style="margin: 10px 0; width: 100%;"><br>
-    
-    <!-- Caption Likhne Ka Box -->
-    <input type="text" id="videoCaption" placeholder="Write a caption..." style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;"><br>
-    
-    <!-- Post Aur Cancel Buttons -->
-    <button onclick="uploadVideo()" style="background: #ff2442; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Post Reel</button>
-    <button onclick="document.getElementById('uploadModal').style.display='none'" style="background: #ccc; color: #333; padding: 10px 20px; border: none; border-radius: 6px; margin-left: 10px; cursor: pointer;">Cancel</button>
-</div>
-
+    </script>
+</body>
 </html>
