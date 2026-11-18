@@ -1,197 +1,205 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desi Reels</title>
+    <title>DC Reels - Live Short Video App</title>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        // TODO: अपने Firebase Project की असली Config यहाँ डालें
+        const firebaseConfig = {
+            apiKey: "YOUR_FIREBASE_API_KEY",
+            authDomain: "desi-reels-be2fc.firebaseapp.com",
+            projectId: "desi-reels-be2fc",
+            storageBucket: "desi-reels-be2fc.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        // Anonymous Login for instant access
+        signInAnonymously(auth).then(() => {
+            console.log("Connected to Firebase Live!");
+            loadReels();
+        }).catch((error) => {
+            console.error("Auth error:", error);
+        });
+
+        window.uploadRealVideo = async function() {
+            const fileInput = document.getElementById('videoFile');
+            const captionInput = document.getElementById('videoCaption');
+            const uploadBtn = document.getElementById('uploadBtn');
+
+            if(fileInput.files.length === 0) {
+                alert('कृपया पहले कोई वीडियो चुनें!');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const caption = captionInput.value || "DC Reel";
+            uploadBtn.innerText = "Uploading to Cloud...";
+            uploadBtn.disabled = true;
+
+            try {
+                // 1. Upload Video to Firebase Storage
+                const storageRef = ref(storage, 'reels/' + Date.now() + '_' + file.name);
+                const snapshot = await uploadBytes(storageRef, file);
+                const downloadURL = await getDownloadURL(snapshot.ref);
+
+                // 2. Save Reel metadata to Firestore Database
+                await addDoc(collection(db, "videos"), {
+                    videoUrl: downloadURL,
+                    caption: caption,
+                    likes: 0,
+                    createdAt: serverTimestamp()
+                });
+
+                alert('वीडियो सफलतापूर्वक अपलोड हो गया और लाइव हो गया!');
+                closeUploadModal();
+                fileInput.value = '';
+                captionInput.value = '';
+                loadReels();
+            } catch (error) {
+                console.error("Upload failed:", error);
+                alert('अपलोड फेल हो गया: ' + error.message);
+            } finally {
+                uploadBtn.innerText = "Upload Reel";
+                uploadBtn.disabled = false;
+            }
+        };
+
+        window.loadReels = async function() {
+            const feedContainer = document.getElementById('reelsFeed');
+            feedContainer.innerHTML = '<div style="color: white; text-align: center; margin-top: 100px;">Loading Live Reels...</div>';
+
+            try {
+                const q = query(collection(db, "videos"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+                
+                if(querySnapshot.empty) {
+                    feedContainer.innerHTML = '<div style="color: #94a3b8; text-align: center; margin-top: 100px;">अभी कोई रील नहीं है। नीचे दिए गए + बटन से पहली रील अपलोड करें!</div>';
+                    return;
+                }
+
+                let html = '';
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    html += `
+                        <div class="reel-item">
+                            <video src="${data.videoUrl}" loop playsinline onclick="togglePlay(this)"></video>
+                            <div class="reel-info">
+                                <h3>@creator</h3>
+                                <p>${data.caption}</p>
+                            </div>
+                            <div class="reel-actions">
+                                <button onclick="likeReel(this)">❤️</button>
+                                <button onclick="alert('Comments feature coming soon!')">💬</button>
+                                <button onclick="alert('Link copied!')">↗️</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                feedContainer.innerHTML = html;
+            } catch (e) {
+                console.error("Error loading reels: ", e);
+                feedContainer.innerHTML = '<div style="color: #ef4444; text-align: center; margin-top: 100px;">डेटा लोड करने में समस्या आई।</div>';
+            }
+        };
+    </script>
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #000; color: #fff; height: 100vh; overflow: hidden; }
 
-        body {
-            background-color: #000;
-            color: #fff;
-            font-family: sans-serif;
-            overflow: hidden;
-            height: 100vh;
-        }
+        /* Reels Feed Container */
+        #reelsFeed { height: calc(100vh - 60px); overflow-y: scroll; scroll-snap-type: y mandatory; }
+        .reel-item { position: relative; width: 100%; height: calc(100vh - 60px); scroll-snap-align: start; background: #111; display: flex; justify-content: center; align-items: center; }
+        .reel-item video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* रील्स फीड कंटेनर */
-        .reels-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: calc(100vh - 65px);
-            overflow-y: scroll;
-            scroll-snap-type: y mandatory;
-            scrollbar-width: none;
-        }
+        .reel-info { position: absolute; bottom: 20px; left: 15px; z-index: 10; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
+        .reel-info h3 { font-size: 16px; margin-bottom: 4px; color: #38bdf8; }
+        .reel-info p { font-size: 14px; color: #f8fafc; }
 
-        .reels-container::-webkit-scrollbar {
-            display: none;
-        }
+        .reel-actions { position: absolute; right: 15px; bottom: 80px; z-index: 10; display: flex; flex-direction: column; gap: 15px; align-items: center; }
+        .reel-actions button { background: rgba(0,0,0,0.5); border: none; width: 45px; height: 45px; border-radius: 50%; color: white; font-size: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
 
-        .reel-card {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            scroll-snap-align: start;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #111;
-        }
+        /* Bottom Nav */
+        nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background: #0b0f19; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; }
+        .nav-btn { background: none; border: none; color: #94a3b8; font-size: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .nav-btn.active { color: #38bdf8; font-weight: bold; }
+        .fab { background: linear-gradient(135deg, #ec4899, #8b5cf6); width: 40px; height: 40px; border-radius: 50%; color: white; font-size: 22px; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(236,72,153,0.4); }
 
-        .reel-card video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        /* ऊपर हेडर */
-        .header {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            right: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 50;
-            pointer-events: none;
-        }
-
-        .header h1 {
-            font-size: 18px;
-            color: #ff3b5c;
-        }
-
-        .user-phone-badge {
-            background: rgba(0, 0, 0, 0.6);
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            color: #fff;
-            pointer-events: auto;
-        }
-
-        /* दाईं ओर तैरने वाले एक्शन बटन (लाइक, कमेंट, शेयर) */
-        .action-buttons {
-            position: absolute;
-            right: 15px;
-            bottom: 80px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-            z-index: 40;
-        }
-
-        .action-btn {
-            background: rgba(0, 0, 0, 0.5);
-            border: none;
-            color: white;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            cursor: pointer;
-        }
-
-        .action-btn span {
-            font-size: 12px;
-            margin-top: 2px;
-        }
-
-        /* नीचे फिक्स बॉटम नेविगेशन बार (+ बटन के साथ) */
-        .navbar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 65px;
-            background: #121212;
-            border-top: 1px solid #222;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 50;
-        }
-
-        .nav-item {
-            color: #aaa;
-            text-decoration: none;
-            font-size: 14px;
-            background: none;
-            border: none;
-            cursor: pointer;
-        }
-
-        .nav-item.active {
-            color: #fff;
-            font-weight: bold;
-        }
-
-        .upload-btn {
-            background: #ff3b5c;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            border: none;
-            cursor: pointer;
-        }
+        /* Upload Modal */
+        #uploadModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: #1e293b; width: 100%; max-width: 400px; padding: 20px; border-radius: 16px; border: 1px solid #38bdf8; position: relative; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
+        .form-group input { width: 100%; padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-size: 14px; }
+        .submit-btn { width: 100%; background: #38bdf8; color: #0b0f19; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
+        .close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <!-- ऐप का हेडर -->
-    <div class="header">
-        <h1>Desi Reels</h1>
-        <div class="user-phone-badge" id="userBadge">Loding...</div>
+    <!-- REELS FEED CONTAINER -->
+    <div id="reelsFeed">
+        <!-- Live videos will load here -->
     </div>
 
-    <!-- रील्स फीड एरिया -->
-    <div class="reels-container" id="reelsContainer">
-        <!-- उदाहरण के लिए एक सैंपल रील -->
-        <div class="reel-card">
-            <video src="https://www.w3schools.com/html/mov_bbb.mp4" autoplay loop muted playsinline></video>
-            
-            <!-- दाईं तरफ के एक्शन बटन -->
-            <div class="action-buttons">
-                <button class="action-btn">❤️<span>124</span></button>
-                <button class="action-btn">💬<span>12</span></button>
-                <button class="action-btn">↗️<span>शेयर</span></button>
+    <!-- UPLOAD MODAL -->
+    <div id="uploadModal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeUploadModal()">✕</button>
+            <h3 style="margin-bottom: 15px; color: #38bdf8;">Upload New DC Reel</h3>
+            <div class="form-group">
+                <label>Select Video File</label>
+                <input type="file" id="videoFile" accept="video/*">
             </div>
+            <div class="form-group">
+                <label>Caption / Title</label>
+                <input type="text" id="videoCaption" placeholder="Write something about your reel...">
+            </div>
+            <button class="submit-btn" id="uploadBtn" onclick="uploadRealVideo()">Upload Reel</button>
         </div>
     </div>
 
-    <!-- नीचे का नेविगेशन बार और अपलोड बटन -->
-    <nav class="navbar">
-        <button class="nav-item active">होम</button>
-        <button class="upload-btn">+</button>
-        <button class="nav-item">प्रोफाइल</button>
+    <!-- BOTTOM NAVIGATION -->
+    <nav>
+        <button class="nav-btn active" onclick="loadReels()">🏠 Home</button>
+        <button class="fab" onclick="openUploadModal()">+</button>
+        <button class="nav-btn" onclick="alert('Profile section active!')">👤 Profile</button>
     </nav>
 
     <script>
-        // यहाँ यूजर का लॉगिन स्टेटस या मोबाइल नंबर दिखाने के लिए बेसिक स्क्रिप्ट
-        window.addEventListener('DOMContentLoaded', () => {
-            const badge = document.getElementById('userBadge');
-            // लोकल स्टोरेज या ऑथेंटिकेशन से यूजर का नंबर सेट करना
-            badge.innerText = "9678829900"; 
-        });
+        function openUploadModal() {
+            document.getElementById('uploadModal').style.display = 'flex';
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').style.display = 'none';
+        }
+
+        function togglePlay(video) {
+            if (video.paused) {
+                video.play();
+            } else {
+                video.pause();
+            }
+        }
+
+        function likeReel(btn) {
+            btn.style.color = btn.style.color === 'rgb(239, 68, 68)' ? 'white' : '#ef4444';
+            btn.innerText = btn.style.color === 'rgb(239, 68, 68)' ? '❤️' : '🤍';
+        }
     </script>
 </body>
 </html>
