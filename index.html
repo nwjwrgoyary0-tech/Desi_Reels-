@@ -1,213 +1,1002 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DC Reels - Live Short Video App</title>
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-
-        // TODO: अपने Firebase Project की असली Config यहाँ डालें
-        const firebaseConfig = {
-            apiKey: "YOUR_FIREBASE_API_KEY",
-            authDomain: "desi-reels-be2fc.firebaseapp.com",
-            projectId: "desi-reels-be2fc",
-            storageBucket: "desi-reels-be2fc.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
-
-        // Anonymous Login for instant access
-        signInAnonymously(auth).then(() => {
-            console.log("Connected to Firebase Live!");
-            loadReels();
-        }).catch((error) => {
-            console.error("Auth error:", error);
-        });
-
-        window.uploadRealVideo = async function() {
-            const fileInput = document.getElementById('videoFile');
-            const captionInput = document.getElementById('videoCaption');
-            const uploadBtn = document.getElementById('uploadBtn');
-
-            if(fileInput.files.length === 0) {
-                alert('कृपया पहले कोई वीडियो चुनें!');
-                return;
-            }
-
-            const file = fileInput.files[0];
-            const caption = captionInput.value || "DC Reel";
-            uploadBtn.innerText = "Uploading to Cloud...";
-            uploadBtn.disabled = true;
-
-            try {
-                // 1. Upload Video to Firebase Storage
-              rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /reels/{allPaths=**} {
-      allow read, write: if request.auth != null;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>DC Reels — Desi Reels</title>
+  <style>
+    :root {
+      --bg-main: #0c0e13;
+      --bg-card: #151922;
+      --bg-elevated: #1e2430;
+      --text-main: #f4f6fb;
+      --text-muted: #98a2b3;
+      --accent-pink: #ff2e63;
+      --accent-violet: #6c5ce7;
+      --accent-gold: #ffb703;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --nav-height: 62px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
-  }
-}
-  const storageRef = ref(storage, 'reels/' + Date.now() + '_' + file.name);
-                const snapshot = await uploadBytes(storageRef, file);
-                const downloadURL = await getDownloadURL(snapshot.ref);
 
-                // 2. Save Reel metadata to Firestore Database
-                await addDoc(collection(db, "videos"), {
-                    videoUrl: downloadURL,
-                    caption: caption,
-                    likes: 0,
-                    createdAt: serverTimestamp()
-                });
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-                alert('वीडियो सफलतापूर्वक अपलोड हो गया और लाइव हो गया!');
-                closeUploadModal();
-                fileInput.value = '';
-                captionInput.value = '';
-                loadReels();
-            } catch (error) {
-                console.error("Upload failed:", error);
-                alert('अपलोड फेल हो गया: ' + error.message);
-            } finally {
-                uploadBtn.innerText = "Upload Reel";
-                uploadBtn.disabled = false;
-            }
-        };
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: #050608;
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow-x: hidden;
+    }
 
-        window.loadReels = async function() {
-            const feedContainer = document.getElementById('reelsFeed');
-            feedContainer.innerHTML = '<div style="color: white; text-align: center; margin-top: 100px;">Loading Live Reels...</div>';
+    .app-shell {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100dvh;
+      margin: 0 auto;
+      background-color: var(--bg-main);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid var(--border-subtle);
+      border-right: 1px solid var(--border-subtle);
+    }
 
-            try {
-                const q = query(collection(db, "videos"), orderBy("createdAt", "desc"));
-                const querySnapshot = await getDocs(q);
-                
-                if(querySnapshot.empty) {
-                    feedContainer.innerHTML = '<div style="color: #94a3b8; text-align: center; margin-top: 100px;">अभी कोई रील नहीं है। नीचे दिए गए + बटन से पहली रील अपलोड करें!</div>';
-                    return;
-                }
+    .top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      padding: calc(10px + var(--safe-top)) 14px 10px;
+      background: rgba(12, 14, 19, 0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
 
-                let html = '';
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    html += `
-                        <div class="reel-item">
-                            <video src="${data.videoUrl}" loop playsinline onclick="togglePlay(this)"></video>
-                            <div class="reel-info">
-                                <h3>@creator</h3>
-                                <p>${data.caption}</p>
-                            </div>
-                            <div class="reel-actions">
-                                <button onclick="likeReel(this)">❤️</button>
-                                <button onclick="alert('Comments feature coming soon!')">💬</button>
-                                <button onclick="alert('Link copied!')">↗️</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                feedContainer.innerHTML = html;
-            } catch (e) {
-                console.error("Error loading reels: ", e);
-                feedContainer.innerHTML = '<div style="color: #ef4444; text-align: center; margin-top: 100px;">डेटा लोड करने में समस्या आई।</div>';
-            }
-        };
-    </script>
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 1.12rem;
+    }
 
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #000; color: #fff; height: 100vh; overflow: hidden; }
+    .brand-badge {
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-violet));
+      color: #fff;
+      font-size: 0.7rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
 
-        /* Reels Feed Container */
-        #reelsFeed { height: calc(100vh - 60px); overflow-y: scroll; scroll-snap-type: y mandatory; }
-        .reel-item { position: relative; width: 100%; height: calc(100vh - 60px); scroll-snap-align: start; background: #111; display: flex; justify-content: center; align-items: center; }
-        .reel-item video { width: 100%; height: 100%; object-fit: cover; }
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-        .reel-info { position: absolute; bottom: 20px; left: 15px; z-index: 10; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
-        .reel-info h3 { font-size: 16px; margin-bottom: 4px; color: #38bdf8; }
-        .reel-info p { font-size: 14px; color: #f8fafc; }
+    .pill-btn {
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-elevated);
+      color: var(--text-main);
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
 
-        .reel-actions { position: absolute; right: 15px; bottom: 80px; z-index: 10; display: flex; flex-direction: column; gap: 15px; align-items: center; }
-        .reel-actions button { background: rgba(0,0,0,0.5); border: none; width: 45px; height: 45px; border-radius: 50%; color: white; font-size: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+    .pill-btn.gold {
+      background: rgba(255, 183, 3, 0.15);
+      border-color: rgba(255, 183, 3, 0.45);
+      color: var(--accent-gold);
+    }
 
-        /* Bottom Nav */
-        nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background: #0b0f19; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; }
-        .nav-btn { background: none; border: none; color: #94a3b8; font-size: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-        .nav-btn.active { color: #38bdf8; font-weight: bold; }
-        .fab { background: linear-gradient(135deg, #ec4899, #8b5cf6); width: 40px; height: 40px; border-radius: 50%; color: white; font-size: 22px; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(236,72,153,0.4); }
+    .main-view {
+      flex: 1;
+      padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 16px);
+      overflow-y: auto;
+    }
 
-        /* Upload Modal */
-        #uploadModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
-        .modal-content { background: #1e293b; width: 100%; max-width: 400px; padding: 20px; border-radius: 16px; border: 1px solid #38bdf8; position: relative; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
-        .form-group input { width: 100%; padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-size: 14px; }
-        .submit-btn { width: 100%; background: #38bdf8; color: #0b0f19; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
-        .close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; }
-    </style>
+    .page {
+      display: none;
+      padding: 12px;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    /* Reels 9:16 stage */
+    .reels-page {
+      padding: 0;
+    }
+
+    .reels-container {
+      height: calc(100dvh - 54px - var(--nav-height) - var(--safe-top) - var(--safe-bottom));
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      scrollbar-width: none;
+    }
+
+    .reels-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .reel-slide {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      scroll-snap-align: start;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .reel-frame {
+      width: 100%;
+      height: 100%;
+      aspect-ratio: 9 / 16;
+      max-height: 100%;
+      object-fit: cover;
+      background: #090b0f;
+    }
+
+    .reel-overlay-bottom {
+      position: absolute;
+      left: 0;
+      right: 68px;
+      bottom: 0;
+      padding: 18px 14px 20px;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+      z-index: 5;
+    }
+
+    .reel-creator {
+      font-weight: 700;
+      font-size: 0.94rem;
+      margin-bottom: 5px;
+    }
+
+    .reel-caption {
+      font-size: 0.85rem;
+      color: #e6eaf2;
+      line-height: 1.35;
+    }
+
+    .reel-actions-right {
+      position: absolute;
+      right: 10px;
+      bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      z-index: 6;
+    }
+
+    .action-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid var(--border-subtle);
+      background: rgba(20, 24, 34, 0.8);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .action-circle.liked {
+      border-color: var(--accent-pink);
+      color: var(--accent-pink);
+    }
+
+    .action-label {
+      font-size: 0.66rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Feed cards with exact display sizes: 9:16, 16:9, 4:5, 1:1 */
+    .feed-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+
+    .feed-header {
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .user-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar-40 {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-violet), var(--accent-pink));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+
+    .user-name {
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .sub-time {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .feed-caption {
+      padding: 0 12px 10px;
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+
+    .media-box {
+      width: 100%;
+      background: #090b0f;
+      overflow: hidden;
+      margin: 0 auto;
+    }
+
+    .ratio-9-16 {
+      aspect-ratio: 9 / 16;
+      max-height: 460px;
+    }
+
+    .ratio-16-9 {
+      aspect-ratio: 16 / 9;
+    }
+
+    .ratio-4-5 {
+      aspect-ratio: 4 / 5;
+      max-height: 440px;
+    }
+
+    .ratio-1-1 {
+      aspect-ratio: 1 / 1;
+      max-height: 420px;
+    }
+
+    .media-box img,
+    .media-box video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .feed-footer {
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    /* Live Size Preview Box inside Create Form */
+    .preview-wrapper {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .preview-meta {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.74rem;
+      color: var(--accent-gold);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .preview-box {
+      width: 100%;
+      max-width: 240px;
+      background: #080a0e;
+      border: 1px dashed rgba(255, 255, 255, 0.25);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .preview-box img,
+    .preview-box video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .ad-banner {
+      background: linear-gradient(135deg, rgba(108, 92, 231, 0.18), rgba(255, 46, 99, 0.14));
+      border: 1px dashed rgba(255, 255, 255, 0.22);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .ad-tag {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.12);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-right: 6px;
+    }
+
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .panel h3 {
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .stat-box {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .stat-val {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-top: 4px;
+      color: var(--accent-gold);
+    }
+
+    .form-group {
+      margin-bottom: 10px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .input, .select {
+      width: 100%;
+      background: var(--bg-elevated);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-size: 0.88rem;
+    }
+
+    .primary-btn {
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-violet));
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .secondary-btn {
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-elevated);
+      color: var(--text-main);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      height: calc(var(--nav-height) + var(--safe-bottom));
+      padding-bottom: var(--safe-bottom);
+      background: rgba(15, 18, 25, 0.96);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border-subtle);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      z-index: 40;
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .nav-btn.active {
+      color: var(--text-main);
+    }
+
+    .nav-btn.active .nav-icon {
+      color: var(--accent-pink);
+    }
+
+    .nav-icon {
+      font-size: 1.15rem;
+    }
+
+    .toast {
+      position: fixed;
+      top: calc(64px + var(--safe-top));
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-elevated);
+      color: var(--text-main);
+      border: 1px solid rgba(255, 183, 3, 0.45);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      z-index: 100;
+      display: none;
+    }
+  </style>
 </head>
 <body>
+  <div class="app-shell">
+    <header class="top-bar">
+      <div class="brand">
+        <span>DC Reels</span>
+        <span class="brand-badge">REAL</span>
+      </div>
+      <div class="top-actions">
+        <button class="pill-btn gold" onclick="switchTab('wallet')">₹ <span id="topUserBalance">0.00</span></button>
+        <button class="pill-btn" onclick="switchTab('owner')">Owner</button>
+      </div>
+    </header>
 
-    <!-- REELS FEED CONTAINER -->
-    <div id="reelsFeed">
-        <!-- Live videos will load here -->
-    </div>
+    <div id="toast" class="toast"></div>
 
-    <!-- UPLOAD MODAL -->
-    <div id="uploadModal">
-        <div class="modal-content">
-            <button class="close-modal" onclick="closeUploadModal()">✕</button>
-            <h3 style="margin-bottom: 15px; color: #38bdf8;">Upload New DC Reel</h3>
-            <div class="form-group">
-                <label>Select Video File</label>
-                <input type="file" id="videoFile" accept="video/*">
-            </div>
-            <div class="form-group">
-                <label>Caption / Title</label>
-                <input type="text" id="videoCaption" placeholder="Write something about your reel...">
-            </div>
-            <button class="submit-btn" id="uploadBtn" onclick="uploadRealVideo()">Upload Reel</button>
+    <main class="main-view">
+      <!-- 1. HOME FEED -->
+      <section id="page-feed" class="page active">
+        <div class="ad-banner">
+          <div>
+            <span class="ad-tag">Ad Slot</span>
+            <strong style="font-size:0.84rem;">DC Reels Sponsor / AdMob</strong>
+            <div class="sub-time">यहाँ असली विज्ञापन या स्पॉन्सर कार्ड चलेगा</div>
+          </div>
+          <button class="secondary-btn" onclick="claimAdReward(1.50)">+₹1.50</button>
         </div>
-    </div>
+        <div id="feedList"></div>
+      </section>
 
-    <!-- BOTTOM NAVIGATION -->
-    <nav>
-        <button class="nav-btn active" onclick="loadReels()">🏠 Home</button>
-        <button class="fab" onclick="openUploadModal()">+</button>
-        <button class="nav-btn" onclick="alert('Profile section active!')">👤 Profile</button>
+      <!-- 2. REELS (9:16 Vertical Snap Feed) -->
+      <section id="page-reels" class="page reels-page">
+        <div id="reelsContainer" class="reels-container"></div>
+      </section>
+
+      <!-- 3. CREATE WITH 9:16 & 16:9 SIZE SELECTOR + LIVE PREVIEW -->
+      <section id="page-create" class="page">
+        <div class="panel">
+          <h3>नया पोस्ट या रील अपलोड करें</h3>
+          <div class="form-group">
+            <label>कंटेंट प्रकार (Type)</label>
+            <select id="postType" class="select" onchange="handleTypeChange()">
+              <option value="reel">Reel / Short Video (9:16)</option>
+              <option value="feed">Feed Post (9:16, 16:9, 4:5, 1:1)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>डिस्प्ले / वीडियो साइज (Aspect Ratio & Pixels)</label>
+            <select id="postRatio" class="select" onchange="updateSizePreview()">
+              <option value="ratio-9-16">9:16 Vertical (1080×1920 px)</option>
+              <option value="ratio-16-9">16:9 Landscape (1920×1080 px)</option>
+              <option value="ratio-4-5">4:5 Portrait (1080×1350 px)</option>
+              <option value="ratio-1-1">1:1 Square (1080×1080 px)</option>
+            </select>
+          </div>
+
+          <div class="preview-wrapper">
+            <div class="preview-meta">
+              <span id="previewRatioLabel">Size: 9:16</span>
+              <span id="previewPixelLabel">1080×1920 px</span>
+            </div>
+            <div id="sizePreviewBox" class="preview-box ratio-9-16">
+              <span>Live Size Preview (9:16 / 16:9)</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>फ़ोन से फ़ोटो या वीडियो चुनें</label>
+            <input id="mediaFile" type="file" accept="image/*,video/*" class="input" onchange="handleFilePreview()" />
+          </div>
+          <div class="form-group">
+            <label>कैप्शन / हैशटैग</label>
+            <input id="postCaption" type="text" placeholder="अपना कैप्शन लिखें..." class="input" />
+          </div>
+          <button class="primary-btn" onclick="publishContent()">लाइव पब्लिश करें (+₹2.00 Creator Bonus)</button>
+        </div>
+      </section>
+
+      <!-- 4. USER WALLET -->
+      <section id="page-wallet" class="page">
+        <div class="panel">
+          <h3>यूज़र अर्निंग वॉलेट (User Earning)</h3>
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-label">आपका उपलब्ध बैलेंस</div>
+              <div class="stat-val">₹<span id="walletBalance">0.00</span></div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">न्यूनतम विड्रॉल लिमिट</div>
+              <div class="stat-val">₹50.00</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>आपकी UPI ID (विड्रॉल के लिए)</label>
+            <input id="upiInput" type="text" placeholder="example@okaxis" class="input" />
+          </div>
+          <button class="primary-btn" onclick="requestWithdraw()">UPI विड्रॉल रिक्वेस्ट भेजें</button>
+        </div>
+
+        <div class="panel">
+          <h3>यूज़र रिवॉर्ड</h3>
+          <button class="secondary-btn" onclick="claimAdReward(1.00)">Watch Reward Ad (+₹1.00)</button>
+        </div>
+      </section>
+
+      <!-- 5. OWNER DASHBOARD -->
+      <section id="page-owner" class="page">
+        <div class="panel">
+          <h3>ओनर अर्निंग डैशबोर्ड (App Owner)</h3>
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-label">कुल ऐड/बूस्ट रेवेन्यू</div>
+              <div class="stat-val">₹<span id="ownerGross">120.00</span></div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">यूज़र रिवॉर्ड पूल</div>
+              <div class="stat-val">₹<span id="ownerUserPool">36.00</span></div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">ओनर नेट प्रॉफ़िट (70%)</div>
+              <div class="stat-val" style="color:#4ade80;">₹<span id="ownerNet">84.00</span></div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">कुल पोस्ट्स / रील्स</div>
+              <div class="stat-val" id="totalItemsCount">0</div>
+            </div>
+          </div>
+          <button class="primary-btn" onclick="simulateAdImpression()">सिम्युलेट ऐड रेवेन्यू (+₹10.00 Gross)</button>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-tab="feed" onclick="switchTab('feed')">
+        <span class="nav-icon">🏠</span>
+        <span>Home</span>
+      </button>
+      <button class="nav-btn" data-tab="reels" onclick="switchTab('reels')">
+        <span class="nav-icon">🎬</span>
+        <span>Reels</span>
+      </button>
+      <button class="nav-btn" data-tab="create" onclick="switchTab('create')">
+        <span class="nav-icon">➕</span>
+        <span>Create</span>
+      </button>
+      <button class="nav-btn" data-tab="wallet" onclick="switchTab('wallet')">
+        <span class="nav-icon">💰</span>
+        <span>Earn</span>
+      </button>
+      <button class="nav-btn" data-tab="owner" onclick="switchTab('owner')">
+        <span class="nav-icon">📊</span>
+        <span>Owner</span>
+      </button>
     </nav>
+  </div>
 
-    <script>
-        function openUploadModal() {
-            document.getElementById('uploadModal').style.display = 'flex';
-        }
+  <!-- Firebase SDK (Modular 10.7.1) — Project: desi-reels-be2fc -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
-        function closeUploadModal() {
-            document.getElementById('uploadModal').style.display = 'none';
-        }
+    const firebaseConfig = {
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "desi-reels-be2fc.firebaseapp.com",
+      projectId: "desi-reels-be2fc",
+      storageBucket: "desi-reels-be2fc.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
 
-        function togglePlay(video) {
-            if (video.paused) {
-                video.play();
-            } else {
-                video.pause();
-            }
-        }
+    try {
+      initializeApp(firebaseConfig);
+      window.__DC_FIREBASE_READY__ = true;
+    } catch (e) {
+      window.__DC_FIREBASE_READY__ = false;
+    }
+  </script>
 
-        function likeReel(btn) {
-            btn.style.color = btn.style.color === 'rgb(239, 68, 68)' ? 'white' : '#ef4444';
-            btn.innerText = btn.style.color === 'rgb(239, 68, 68)' ? '❤️' : '🤍';
+  <script>
+    const STORAGE_KEY = "dc_reels_real_state_v2";
+    const RATIO_LABELS = {
+      "ratio-9-16": { ratio: "9:16", pixels: "1080×1920 px" },
+      "ratio-16-9": { ratio: "16:9", pixels: "1920×1080 px" },
+      "ratio-4-5":  { ratio: "4:5",  pixels: "1080×1350 px" },
+      "ratio-1-1":  { ratio: "1:1",  pixels: "1080×1080 px" }
+    };
+
+    let selectedPreviewData = null;
+
+    const defaultState = {
+      userBalance: 5.00,
+      ownerGross: 120.00,
+      ownerUserPool: 36.00,
+      posts: [
+        {
+          id: "p1",
+          creator: "Nwjwr • DC Creator",
+          type: "feed",
+          ratio: "ratio-16-9",
+          mediaUrl: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=1200&auto=format&fit=crop",
+          isVideo: false,
+          caption: "16:9 Landscape Feed Card • #DCReels #DesiReels",
+          likes: 24,
+          liked: false
+        },
+        {
+          id: "p2",
+          creator: "Music Diary Official",
+          type: "reel",
+          ratio: "ratio-9-16",
+          mediaUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+          isVideo: true,
+          caption: "9:16 Vertical Reel • #Reels #Trending",
+          likes: 48,
+          liked: false
         }
-    </script>
+      ]
+    };
+
+    let state = loadState();
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        return saved ? { ...defaultState, ...saved } : { ...defaultState };
+      } catch {
+        return { ...defaultState };
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderAll();
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.style.display = "block";
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => {
+        el.style.display = "none";
+      }, 2400);
+    }
+
+    function handleTypeChange() {
+      const type = document.getElementById("postType").value;
+      const ratioSelect = document.getElementById("postRatio");
+      if (type === "reel") {
+        ratioSelect.value = "ratio-9-16";
+      }
+      updateSizePreview();
+    }
+
+    function updateSizePreview() {
+      const ratioKey = document.getElementById("postRatio").value;
+      const box = document.getElementById("sizePreviewBox");
+      const meta = RATIO_LABELS[ratioKey] || RATIO_LABELS["ratio-9-16"];
+
+      box.className = "preview-box " + ratioKey;
+      document.getElementById("previewRatioLabel").textContent = "Size: " + meta.ratio;
+      document.getElementById("previewPixelLabel").textContent = meta.pixels;
+
+      if (selectedPreviewData) {
+        box.innerHTML = selectedPreviewData.isVideo
+          ? `<video src="${selectedPreviewData.url}" playsinline loop muted autoplay></video>`
+          : `<img src="${selectedPreviewData.url}" alt="Preview" />`;
+      } else {
+        box.innerHTML = `<span>Live Preview (${meta.ratio} • ${meta.pixels})</span>`;
+      }
+    }
+
+    function handleFilePreview() {
+      const fileInput = document.getElementById("mediaFile");
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) {
+        selectedPreviewData = null;
+        updateSizePreview();
+        return;
+      }
+      const isVideo = file.type.startsWith("video/");
+      const reader = new FileReader();
+      reader.onload = () => {
+        selectedPreviewData = { url: reader.result, isVideo };
+        updateSizePreview();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+      document.getElementById("page-" + tab).classList.add("active");
+
+      document.querySelectorAll(".nav-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.tab === tab);
+      });
+
+      if (tab === "create") {
+        updateSizePreview();
+      } else if (tab === "reels") {
+        setTimeout(syncReelPlayback, 120);
+      } else {
+        document.querySelectorAll("video").forEach(v => v.pause());
+      }
+    }
+
+    function toggleLike(id) {
+      const item = state.posts.find(p => p.id === id);
+      if (!item) return;
+      item.liked = !item.liked;
+      item.likes += item.liked ? 1 : -1;
+      saveState();
+    }
+
+    function claimAdReward(amount) {
+      state.userBalance = Number((state.userBalance + amount).toFixed(2));
+      state.ownerUserPool = Number((state.ownerUserPool + amount).toFixed(2));
+      state.ownerGross = Number((state.ownerGross + amount * 1.5).toFixed(2));
+      saveState();
+      showToast(`वॉलेट में +₹${amount.toFixed(2)} जुड़े`);
+    }
+
+    function simulateAdImpression() {
+      state.ownerGross = Number((state.ownerGross + 10.00).toFixed(2));
+      state.ownerUserPool = Number((state.ownerUserPool + 3.00).toFixed(2));
+      saveState();
+      showToast("ओनर रेवेन्यू अपडेट हुआ (+₹10.00 Gross)");
+    }
+
+    function requestWithdraw() {
+      const upi = document.getElementById("upiInput").value.trim();
+      if (!upi || !upi.includes("@")) {
+        showToast("सही UPI ID दर्ज करें");
+        return;
+      }
+      if (state.userBalance < 50) {
+        showToast("न्यूनतम ₹50.00 बैलेंस ज़रूरी है");
+        return;
+      }
+      const amt = state.userBalance;
+      state.userBalance = 0;
+      saveState();
+      showToast(`₹${amt.toFixed(2)} की विड्रॉल रिक्वेस्ट (${upi}) दर्ज हुई`);
+    }
+
+    function publishContent() {
+      const type = document.getElementById("postType").value;
+      const ratio = type === "reel" ? "ratio-9-16" : document.getElementById("postRatio").value;
+      const caption = document.getElementById("postCaption").value.trim() || "नया अपडेट #DCReels";
+
+      const finishPublish = (mediaUrl, isVideo) => {
+        state.posts.unshift({
+          id: "p_" + Date.now(),
+          creator: "Nwjwr (You)",
+          type,
+          ratio,
+          mediaUrl,
+          isVideo,
+          caption,
+          likes: 1,
+          liked: true
+        });
+        state.userBalance = Number((state.userBalance + 2.00).toFixed(2));
+        document.getElementById("postCaption").value = "";
+        document.getElementById("mediaFile").value = "";
+        selectedPreviewData = null;
+        updateSizePreview();
+        saveState();
+        showToast("पब्लिश हो गया! +₹2.00 बोनस मिला");
+        switchTab(type === "reel" ? "reels" : "feed");
+      };
+
+      if (selectedPreviewData) {
+        finishPublish(selectedPreviewData.url, selectedPreviewData.isVideo);
+      } else {
+        finishPublish(
+          "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=1200&auto=format&fit=crop",
+          false
+        );
+      }
+    }
+
+    function syncReelPlayback() {
+      const container = document.getElementById("reelsContainer");
+      if (!container) return;
+      const slides = container.querySelectorAll(".reel-slide");
+      slides.forEach(slide => {
+        const video = slide.querySelector("video");
+        if (!video) return;
+        const rect = slide.getBoundingClientRect();
+        const cRect = container.getBoundingClientRect();
+        const visible = Math.abs(rect.top - cRect.top) < rect.height * 0.45;
+        if (visible) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      });
+    }
+
+    function renderFeed() {
+      const feedList = document.getElementById("feedList");
+      const feedItems = state.posts.filter(p => p.type === "feed");
+      feedList.innerHTML = feedItems.map(item => {
+        const info = RATIO_LABELS[item.ratio] || RATIO_LABELS["ratio-4-5"];
+        return `
+          <article class="feed-card">
+            <div class="feed-header">
+              <div class="user-meta">
+                <div class="avatar-40">${item.creator.charAt(0)}</div>
+                <div>
+                  <div class="user-name">${item.creator}</div>
+                  <div class="sub-time">${info.ratio} • ${info.pixels}</div>
+                </div>
+              </div>
+              <button class="secondary-btn" onclick="showToast('फ़ॉलो किया गया!')">Follow</button>
+            </div>
+            <div class="feed-caption">${item.caption}</div>
+            <div class="media-box ${item.ratio}">
+              ${item.isVideo
+                ? `<video src="${item.mediaUrl}" controls playsinline loop muted></video>`
+                : `<img src="${item.mediaUrl}" alt="Post media" />`
+              }
+            </div>
+            <div class="feed-footer">
+              <button class="secondary-btn" onclick="toggleLike('${item.id}')">
+                ${item.liked ? "❤️" : "🤍"} ${item.likes}
+              </button>
+              <button class="secondary-btn" onclick="showToast('लिंक कॉपी हुआ!')">Share</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderReels() {
+      const container = document.getElementById("reelsContainer");
+      const reelItems = state.posts.filter(p => p.type === "reel");
+      container.innerHTML = reelItems.map(item => `
+        <div class="reel-slide">
+          ${item.isVideo
+            ? `<video class="reel-frame" src="${item.mediaUrl}" playsinline loop muted onclick="this.muted = !this.muted; showToast(this.muted ? 'Muted' : 'Sound On')"></video>`
+            : `<img class="reel-frame" src="${item.mediaUrl}" alt="Reel" />`
+          }
+          <div class="reel-overlay-bottom">
+            <div class="reel-creator">@${item.creator.toLowerCase().replace(/[^a-z0-9]/g, "")}</div>
+            <div class="reel-caption">${item.caption} • 9:16 (1080×1920)</div>
+          </div>
+          <div class="reel-actions-right">
+            <button class="action-circle ${item.liked ? "liked" : ""}" onclick="toggleLike('${item.id}')">
+              <span>${item.liked ? "❤️" : "🤍"}</span>
+              <span class="action-label">${item.likes}</span>
+            </button>
+            <button class="action-circle" onclick="claimAdReward(0.50)">
+              <span>🪙</span>
+              <span class="action-label">+₹0.5</span>
+            </button>
+          </div>
+        </div>
+      `).join("");
+
+      container.onscroll = () => syncReelPlayback();
+    }
+
+    function renderStats() {
+      const ownerNet = Math.max(0, Number((state.ownerGross - state.ownerUserPool).toFixed(2)));
+      document.getElementById("topUserBalance").textContent = state.userBalance.toFixed(2);
+      document.getElementById("walletBalance").textContent = state.userBalance.toFixed(2);
+      document.getElementById("ownerGross").textContent = state.ownerGross.toFixed(2);
+      document.getElementById("ownerUserPool").textContent = state.ownerUserPool.toFixed(2);
+      document.getElementById("ownerNet").textContent = ownerNet.toFixed(2);
+      document.getElementById("totalItemsCount").textContent = state.posts.length;
+    }
+
+    function renderAll() {
+      renderStats();
+      renderFeed();
+      renderReels();
+    }
+
+    renderAll();
+    updateSizePreview();
+  </script>
 </body>
 </html>
