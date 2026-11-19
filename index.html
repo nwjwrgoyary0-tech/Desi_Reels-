@@ -51,7 +51,15 @@
 
             try {
                 // 1. Upload Video to Firebase Storage
-                const storageRef = ref(storage, 'reels/' + Date.now() + '_' + file.name);
+              rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /reels/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+  const storageRef = ref(storage, 'reels/' + Date.now() + '_' + file.name);
                 const snapshot = await uploadBytes(storageRef, file);
                 const downloadURL = await getDownloadURL(snapshot.ref);
 
