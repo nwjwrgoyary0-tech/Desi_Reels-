@@ -1010,5 +1010,95 @@ const firebaseConfig = {
   measurementId: "G-KCYW6JTXPG"
 };
   </script>
+  <!-- 1. LOGIN SCREEN -->
+  <!-- 1. LOGIN SCREEN (जब यूज़र लॉगिन न हो तब दिखेगी) -->
+<div id="desiLoginScreen" style="position:fixed; inset:0; background:#0b0b0f; color:#fff; display:flex; align-items:center; justify-content:center; z-index:9999; padding:20px;">
+  <div style="width:100%; max-width:360px; background:#16161d; padding:24px; border-radius:16px; text-align:center; border:1px solid #2a2a35;">
+    <h2 style="margin:0 0 8px;">Desi Reels</h2>
+    <p style="margin:0 0 20px; color:#b5b5c3; font-size:14px;">
+      शुरू करने के लिए लॉगिन करें
+    </p>
+
+    <input
+      id="loginNameInput"
+      type="text"
+      placeholder="अपना नाम लिखें"
+      style="width:100%; box-sizing:border-box; padding:12px; margin-bottom:12px; border-radius:10px; border:1px solid #333; background:#0f0f14; color:#fff; font-size:14px;"
+    />
+
+    <button
+      id="desiLoginBtn"
+      type="button"
+      style="width:100%; padding:12px; border:none; border-radius:10px; background:#ff2e55; color:#fff; font-size:15px; font-weight:bold; cursor:pointer;"
+    >
+      Login करें
+    </button>
+  </div>
+</div>
+
+<!-- 2. SETTINGS PANEL (इसके अंदर Logout बटन रहेगा) -->
+<div id="desiSettingsPanel" style="display:none; background:#16161d; color:#fff; padding:16px; border-radius:14px; margin:12px; border:1px solid #2a2a35;">
+  <h3 style="margin:0 0 8px;">Settings</h3>
+  <p id="loggedInUserLabel" style="margin:0 0 14px; color:#b5b5c3; font-size:13px;">
+    User: Guest
+  </p>
+
+  <!-- लॉगिन होने के बाद ही यह Logout बटन दिखेगा -->
+  <button
+    id="desiLogoutBtn"
+    type="button"
+    style="display:none; width:100%; padding:11px; border:none; border-radius:10px; background:#e53935; color:#fff; font-size:14px; font-weight:bold; cursor:pointer;"
+  >
+    Logout
+  </button>
+</div>
+
+<script>
+  const desiLoginScreen = document.getElementById("desiLoginScreen");
+  const loginNameInput = document.getElementById("loginNameInput");
+  const desiLoginBtn = document.getElementById("desiLoginBtn");
+  const desiLogoutBtn = document.getElementById("desiLogoutBtn");
+  const loggedInUserLabel = document.getElementById("loggedInUserLabel");
+
+  function updateDesiAuthUI(userName) {
+    const isLoggedIn = Boolean(userName);
+
+    if (isLoggedIn) {
+      desiLoginScreen.style.display = "none";
+      desiLogoutBtn.style.display = "block";
+      loggedInUserLabel.textContent = "Logged in as: " + userName;
+    } else {
+      desiLoginScreen.style.display = "flex";
+      desiLogoutBtn.style.display = "none";
+      loggedInUserLabel.textContent = "Not logged in";
+    }
+  }
+
+  desiLoginBtn.addEventListener("click", function () {
+    const name = (loginNameInput.value || "").trim() || "Desi User";
+    localStorage.setItem("desi_reels_user", name);
+    updateDesiAuthUI(name);
+  });
+
+  desiLogoutBtn.addEventListener("click", async function () {
+    localStorage.removeItem("desi_reels_user");
+
+    // अगर आपके index.html में Firebase auth initialized है, तो उसे भी signOut कर देगा:
+    if (window.firebase && firebase.auth) {
+      try {
+        await firebase.auth().signOut();
+      } catch (err) {
+        console.error("Firebase signOut error:", err);
+      }
+    }
+
+    updateDesiAuthUI("");
+  });
+
+  // ऐप खुलते ही चेक करेगा कि यूज़र पहले से लॉगिन है या पहली बार आया है
+  const savedUser = localStorage.getItem("desi_reels_user") || "";
+  updateDesiAuthUI(savedUser);
+</script>
+
   </body>
 </html>
